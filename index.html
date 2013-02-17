@@ -7,14 +7,15 @@
 			@import url('$views/css/image.css');
 			@import url('$views/css/list.css');
 			@import url('sp://tabify/css/main.css');
+			/* @import url('sp://tabify/css/alphaTab.css'); */
 		</style>
 	</head>
 	<body>
-		<div id="wrapper">
-			<div id="index" class="section">
-				<h1>Tabify</h1>
-			</div>
+		<header>
+			<h1>tabify</h1>
+		</header>
 
+		<section id="control">
 			<select id="test-file">
 				<option value="tabs/test-file.gp5">Test file</option>
 			</select>
@@ -36,11 +37,13 @@
 				<option value="1.5">150%</option>
 				<option value="2.0">200%</option>
 			</select>
+		</section>
 
-			<br />
+		<section id="song">
+			<div><div id="tablature" /></div>
 
-			<div id="tablature" />
-		</div>
+			<footer>Copyright info</footer>
+		</section>
 
 		<script src="sp://tabify/js/jquery.min.js"></script>
 		<script src="sp://tabify/js/alphaTab.min.js"></script>
