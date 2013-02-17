@@ -7,7 +7,6 @@
 			@import url('$views/css/image.css');
 			@import url('$views/css/list.css');
 			@import url('sp://tabify/css/main.css');
-			/* @import url('sp://tabify/css/alphaTab.css'); */
 		</style>
 	</head>
 	<body>
@@ -16,10 +15,8 @@
 		</header>
 
 		<section id="control">
-			<select id="test-file">
-				<option value="tabs/test-file.gp5">Test file</option>
-			</select>
-			<input id="load-test-file" type="button" value="Load" />
+			<select id="tab-files"></select>
+			<input id="load-tab-file" type="button" value="Load" />
 			|
 
 			<label for="song-tracks">Tracks:</label>
@@ -42,48 +39,79 @@
 		<section id="song">
 			<div><div id="tablature" /></div>
 
-			<footer>Copyright info</footer>
+			<footer>Copyright info (TODO)</footer>
 		</section>
 
 		<script src="sp://tabify/js/jquery.min.js"></script>
 		<script src="sp://tabify/js/alphaTab.min.js"></script>
 		<script src="sp://tabify/js/jquery.alphaTab.min.js"></script>
 		<script>
+
 			$(document).ready(function() {
-				var api = $('div#tablature').alphaTab({
-					loadCallback: function(song) {
-						var selected = false;
-						var re = /guitar/i;
-						var tracks = $('#song-tracks');
-						tracks.find('option').remove();
-						for (var i = 0; i < song.tracks.length; i++) {
-							var elm = $('<option value="'+i+'">'+song.tracks[i].name+'</option>');
-							if (selected == false && song.tracks[i].name.match(re)) {
-								api.options.track = i;
-								selected = true;
-								elm.attr("selected", "selected");
+				files = ['js/alphaTab.min', 'js/jquery.alphaTab.min', '$api/models']
+				require(['$api/models'], function(models) {
+					var player = models.player;
+					var api = $('div#tablature').alphaTab({
+						loadCallback: function(song) {
+							var selected = false;
+							var re = /guitar/i;
+							var tracks = $('#song-tracks');
+							tracks.find('option').remove();
+							for (var i = 0; i < song.tracks.length; i++) {
+								var elm = $('<option value="'+i+'">'+song.tracks[i].name+'</option>');
+								if (selected == false && song.tracks[i].name.match(re)) {
+									api.options.track = i;
+									selected = true;
+									elm.attr("selected", "selected");
+								}
+								tracks.append(elm);
 							}
-							tracks.append(elm);
+						}
+					});
+
+					// Get the current track and listen for change events
+					models.player.load('track').done(updateCurrentTrack);
+					models.player.addEventListener('change', updateCurrentTrack);
+
+					function updateCurrentTrack() {
+						if (models.player.track == null) {
+							// TODO hide tab, show something else
+						} else {
+							loadTabsForUri(models.player.track.uri);
 						}
 					}
-				});
 
-				// initialize button events
-				$('#load-test-file').click(function(){
-					var testFile = $('#test-file :selected').val();
-					api.loadFile(testFile);
-				});
-				$('#zoom').change(function(){
-					var zoomlvl = parseFloat($('#zoom :selected').val());
-					api.tablature.updateScale(zoomlvl);
-				});
-				$('#select-song-track').click(function() {
-					var index = parseInt($('#song-tracks :selected').val());
-					api.tablature.setTrack(api.tablature.track.song.tracks[index]);
-				});
+					// Yes, right now this is not available externally. :(
+					var backend = "http://localhost:8080/tab"
+					function loadTabsForUri(uri) {
+						$.getJSON(backend + "/search", {uri: uri}, function(data) {
+							var files = $('#tab-files');
+							files.find('option').remove();
+							$.each(data.tracks, function(i, track) {
+								var tabUrl = backend + "/file/" + track.id + ".gp5"
+								var elm = $('<option value="'+tabUrl+'">'+track.title+'</option>');
+								if (i == 0) {
+									elm.attr("selected", "selected");
+									api.loadFile(tabUrl);
+								}
+								files.append(elm);
+							});
+						});
+					}
 
-				// automatically load the first file
-				api.loadFile($('#test-file :selected').val());
+					$('#load-tab-file').click(function(){
+						var file = $('#tab-files :selected').val();
+						api.loadFile(file);
+					});
+					$('#zoom').change(function(){
+						var zoomlvl = parseFloat($('#zoom :selected').val());
+						api.tablature.updateScale(zoomlvl);
+					});
+					$('#select-song-track').click(function() {
+						var index = parseInt($('#song-tracks :selected').val());
+						api.tablature.setTrack(api.tablature.track.song.tracks[index]);
+					});
+				});
 			});
 		</script>
 	</body>
