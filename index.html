@@ -11,7 +11,7 @@
 	</head>
 	<body>
 		<header>
-			<h1>tabify</h1>
+			<h1>tabbar</h1>
 		</header>
 
 		<section id="control">
@@ -36,16 +36,35 @@
 			</select>
 		</section>
 
-		<section id="song">
-			<div><div id="tablature" /></div>
+		<div id="track">
+			<section id="song" style="display: none;">
+				<div><div id="tablature" /></div>
 
-			<footer>Copyright info (TODO)</footer>
-		</section>
+				<footer>Copyright info (TODO)</footer>
+			</section>
+
+			<section id="nothing">
+				<h3>Play a track to start</h3>
+				<img src="sp://tabify/img/not-found.png" /><br />
+			</section>
+
+			<section id="loading" style="display: none">
+				<h3>Loading</h3>
+				<img src="sp://tabify/img/not-found.png" /><br />
+			</section>
+
+			<section id="missing" style="display: none">
+				<h3>No tablature available</h3>
+				<img src="sp://tabify/img/not-found.png" /><br />
+			</section>
+		</div>
 
 		<script src="sp://tabify/js/jquery.min.js"></script>
 		<script src="sp://tabify/js/alphaTab.min.js"></script>
 		<script src="sp://tabify/js/jquery.alphaTab.min.js"></script>
 		<script>
+			// Yes, right now this is not available externally. :(
+			var backend = "http://localhost:8080/tab"
 
 			$(document).ready(function() {
 				files = ['js/alphaTab.min', 'js/jquery.alphaTab.min', '$api/models']
@@ -66,6 +85,9 @@
 								}
 								tracks.append(elm);
 							}
+							$('#missing').hide();
+							$('#loading').hide();
+							$('#song').show();
 						}
 					});
 
@@ -73,20 +95,32 @@
 					models.player.load('track').done(updateCurrentTrack);
 					models.player.addEventListener('change', updateCurrentTrack);
 
+					var currentTrack = null;
 					function updateCurrentTrack() {
-						if (models.player.track == null) {
-							// TODO hide tab, show something else
-						} else {
-							loadTabsForUri(models.player.track.uri);
+						if (currentTrack != models.player.track) {
+							currentTrack = models.player.track;
+							$('#nothing').hide();
+							$('#song').hide();
+							$('#missing').hide();
+							$('#loading').show();
+							if (currentTrack == null) {
+							} else {
+								loadTabsForUri(currentTrack.uri);
+							}
 						}
 					}
 
-					// Yes, right now this is not available externally. :(
-					var backend = "http://localhost:8080/tab"
 					function loadTabsForUri(uri) {
 						$.getJSON(backend + "/search", {uri: uri}, function(data) {
 							var files = $('#tab-files');
 							files.find('option').remove();
+
+							if (data.tracks == null) {
+								$('#loading').hide();
+								$('#missing').show();
+								return;
+							}
+
 							$.each(data.tracks, function(i, track) {
 								var tabUrl = backend + "/file/" + track.id + ".gp5"
 								var elm = $('<option value="'+tabUrl+'">'+track.title+'</option>');
